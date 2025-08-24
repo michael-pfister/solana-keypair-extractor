@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solana Keypair Converter</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-100 p-8 flex items-center justify-center min-h-screen">
+
+  <main class="w-full max-w-2xl bg-white p-8 rounded-2xl shadow-xl space-y-6 border-2 border-gray-200">
+    <h1 class="text-3xl font-bold text-gray-900 text-center">Solana Keypair to Base58</h1>
+    <p class="text-gray-600 text-center">
+      This tool demonstrates how to convert a Solana keypair from a 64-item <code
+        class="bg-gray-100 p-1 rounded">Uint8Array</code> into its Base58 encoded private key and public key strings.
+    </p>
+
+    <div class="space-y-4">
+      <h2 class="text-2xl font-semibold text-gray-800">Your Keypair Array</h2>
+      <div class="relative">
+        <textarea id="keypairArrayInput" rows="5"
+          class="w-full p-4 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 font-mono text-sm resize-none"
+          placeholder="Paste your 64-item Uint8Array here..."></textarea>
+        <div class="absolute top-2 right-2 text-xs text-gray-400">
+          <span id="arrayLength">0</span> / 64 items
+        </div>
+      </div>
+
+      <div class="flex items-center justify-center space-x-4">
+        <button id="populateExampleButton"
+          class="bg-blue-500 text-white font-semibold py-2 px-6 rounded-full shadow-lg hover:bg-blue-600 transition-all duration-300">
+          Populate Example Keypair
+        </button>
+      </div>
+    </div>
+
+    <div class="space-y-4 pt-6 border-t-2 border-gray-200">
+      <h2 class="text-2xl font-semibold text-gray-800">Base58 Private Key</h2>
+      <div class="relative">
+        <input type="text" id="base58Output" readonly
+          class="w-full p-4 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 font-mono"
+          placeholder="The Base58 private key string will appear here..." />
+      </div>
+
+      <div class="flex justify-end">
+        <button id="copyPrivateKeyButton"
+          class="bg-gray-200 text-gray-700 font-semibold py-2 px-6 rounded-full shadow-md hover:bg-gray-300 transition-all duration-300"
+          onclick="copyToClipboard('base58Output', this)">
+          Copy Private Key
+        </button>
+      </div>
+    </div>
+
+    <div class="space-y-4 pt-6 border-t-2 border-gray-200">
+      <h2 class="text-2xl font-semibold text-gray-800">Base58 Public Key</h2>
+      <div class="relative">
+        <input type="text" id="publicKeyOutput" readonly
+          class="w-full p-4 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 font-mono"
+          placeholder="The Base58 public key string will appear here..." />
+      </div>
+
+      <div class="flex justify-end">
+        <button id="copyPublicKeyButton"
+          class="bg-gray-200 text-gray-700 font-semibold py-2 px-6 rounded-full shadow-md hover:bg-gray-300 transition-all duration-300"
+          onclick="copyToClipboard('publicKeyOutput', this)">
+          Copy Public Key
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import bs58 from 'https://cdn.jsdelivr.net/npm/bs58@6.0.0/+esm'
+
+    // Get all relevant elements once the DOM is ready
+    document.addEventListener('DOMContentLoaded', () => {
+      const sampleKeypairArray = [
+        95, 36, 11, 154, 172, 193, 140, 127, 214, 213, 168, 35, 32, 208, 81, 250,
+        31, 168, 33, 93, 116, 48, 14, 130, 88, 171, 13, 89, 84, 71, 187, 196,
+        108, 213, 237, 50, 52, 87, 155, 47, 68, 13, 115, 146, 74, 81, 1, 118,
+        82, 102, 241, 197, 200, 220, 4, 60, 33, 129, 148, 139, 219, 98, 145, 139
+      ];
+
+      const keypairArrayInput = document.getElementById('keypairArrayInput');
+      const base58Output = document.getElementById('base58Output');
+      const publicKeyOutput = document.getElementById('publicKeyOutput');
+      const populateButton = document.getElementById('populateExampleButton');
+      const arrayLengthSpan = document.getElementById('arrayLength');
+
+      // Helper function to convert Uint8Array to Base58
+      function convertToBase58(uint8Array) {
+        return bs58.encode(uint8Array);
+      }
+
+      // Main function to convert and display keys
+      function convertAndDisplay(inputArray) {
+        const privateKeyArray = inputArray.slice(0, 32);
+        const privateKeyUint8Array = new Uint8Array(privateKeyArray);
+        base58Output.value = convertToBase58(privateKeyUint8Array);
+
+        const publicKeyArray = inputArray.slice(32, 64);
+        const publicKeyUint8Array = new Uint8Array(publicKeyArray);
+        publicKeyOutput.value = convertToBase58(publicKeyUint8Array);
+      }
+
+      // Function to handle changes in the input textarea
+      function handleInput() {
+        try {
+          const arrayString = keypairArrayInput.value.trim();
+          if (!arrayString) {
+            arrayLengthSpan.textContent = '0';
+            base58Output.value = '';
+            publicKeyOutput.value = '';
+            return;
+          }
+          const parsedArray = JSON.parse(arrayString);
+          if (Array.isArray(parsedArray)) {
+            arrayLengthSpan.textContent = parsedArray.length;
+            if (parsedArray.length === 64) {
+              convertAndDisplay(parsedArray);
+            } else {
+              base58Output.value = 'Invalid array length.';
+              publicKeyOutput.value = '';
+            }
+          } else {
+            // This case handles a non-array JSON object, not really expected but good to have
+            arrayLengthSpan.textContent = '0';
+            base58Output.value = 'Invalid array format.';
+            publicKeyOutput.value = '';
+          }
+        } catch (error) {
+          // This catches invalid JSON format (e.g., incomplete array)
+          arrayLengthSpan.textContent = '0';
+          base58Output.value = 'Error: Invalid JSON format.';
+          publicKeyOutput.value = '';
+          console.error('Conversion error:', error);
+        }
+      }
+
+      // Event listener for the populate button
+      populateButton.addEventListener('click', () => {
+        keypairArrayInput.value = `[${sampleKeypairArray.join(', ')}]`;
+        handleInput();
+      });
+
+      // Event listener for user-pasted content
+      keypairArrayInput.addEventListener('input', handleInput);
+    });
+
+
+  </script>
+  <script>
+    // Simple and modern copy function
+    async function copyToClipboard(outputId, buttonElement) {
+      try {
+        const output = document.getElementById(outputId);
+        if (output.value) {
+          await navigator.clipboard.writeText(output.value);
+          const originalText = buttonElement.textContent;
+          buttonElement.textContent = 'Copied!';
+          setTimeout(() => {
+            buttonElement.textContent = originalText;
+          }, 1500);
+        }
+      } catch (err) {
+        console.error('Failed to copy text: ', err);
+      }
+    }
+  </script>
+</body>
+
+</html>
